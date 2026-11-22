@@ -1,0 +1,142 @@
+openapi: 3.0.3
+info:
+  title: AG-SHIELD Partner Risk API
+  version: 0.1.0-preview.1
+  description: >-
+    Preview contract for the server-to-server risk-check gateway. The deployed
+    endpoint and real partner access require operator verification. A response
+    is a risk indicator, not proof of fraud or safety. Failed checks are UNKNOWN.
+servers:
+  - url: https://zmiaaxnevvznmvfzlcba.functions.supabase.co
+    description: Gateway origin from source; deployment has not been live-verified.
+security:
+  - PartnerKey: []
+paths:
+  /risk-check:
+    post:
+      operationId: riskCheck
+      summary: Request an account risk assessment
+      description: >-
+        Partner server only. Requires scope verify:read. Store the API key
+        securely. Calls may be metered. This operation does not verify the
+        legal owner of an account and does not guarantee a safe transaction.
+      tags: [Risk evaluation]
+      security:
+        - PartnerKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskCheckRequest'
+      responses:
+        '200':
+          description: Valid risk assessment (not a certification of accuracy)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskCheckResponse'
+        '400': { $ref: '#/components/responses/ApiError' }
+        '401': { $ref: '#/components/responses/ApiError' }
+        '403': { $ref: '#/components/responses/ApiError' }
+        '405': { $ref: '#/components/responses/ApiError' }
+        '413': { $ref: '#/components/responses/ApiError' }
+        '429':
+          description: Rate or quota limit; no assessment available
+          headers:
+            Retry-After:
+              description: Optional seconds before retry
+              schema: { type: integer, minimum: 0 }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500': { $ref: '#/components/responses/ApiError' }
+        '503': { $ref: '#/components/responses/ApiError' }
+components:
+  securitySchemes:
+    PartnerKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Raw tenant-scoped key with verify:read; server-side storage only.
+  responses:
+    ApiError:
+      description: Request failed; decision UNKNOWN, never SAFE
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+  schemas:
+    RiskCheckRequest:
+      type: object
+      required: [account_number, bank_name]
+      properties:
+        account_number:
+          type: string
+          pattern: '^[0-9]{10}$'
+          description: Nigerian bank account number; retain leading zeros.
+        bank_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        amount:
+          type: number
+          minimum: 0
+          description: Transaction amount in NGN; optional.
+        is_new_recipient:
+          type: boolean
+          default: true
+        holder_name:
+          type: string
+          maxLength: 150
+          description: Unverified name hint; NOT proof of account ownership.
+    RiskCheckResponse:
+      type: object
+      additionalProperties: true
+      required: [status, risk_level, risk_score, recommended_action, reasons, source_registry, primary_match_flags, execution_time_ms]
+      properties:
+        status:
+          $ref: '#/components/schemas/RiskLevel'
+        risk_level:
+          $ref: '#/components/schemas/RiskLevel'
+        risk_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        confidence_interval:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: Legacy scalar confidence name, not an interval.
+        recommended_action:
+          type: string
+          enum: [ALLOW, REVIEW, BLOCK, FORCE_MANDATORY_SECONDARY_OTP]
+        reasons:
+          type: array
+          items: { type: string }
+        source_registry:
+          type: array
+          items: { type: string }
+        primary_match_flags:
+          type: array
+          items: { type: string }
+        social_proof:
+          type: string
+          nullable: true
+        execution_time_ms:
+          type: number
+          minimum: 0
+    RiskLevel:
+      type: string
+      enum: [safe, warning, high_risk]
+    ApiError:
+      type: object
+      additionalProperties: true
+      properties:
+        error: { type: string }
+        code: { type: string }
+        retry_after_seconds: { type: integer, minimum: 0 }
+        calls_used: { type: integer, nullable: true }
+        monthly_quota: { type: integer, nullable: true }

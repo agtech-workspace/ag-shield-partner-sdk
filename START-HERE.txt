@@ -1,0 +1,53 @@
+AG-SHIELD PARTNER SDK - SHORTEST SETUP (NO BASH REQUIRED)
+
+BEFORE DISTRIBUTION: The original public AG-SHIELD repo exposed plausible production secrets in .env.example. Make it private and ROTATE/REVOKE the service-role key, provider keys, database credentials and Supabase access token. Do not copy its history into the partner repo.
+
+1. Open https://github.com/new
+   Owner: agtech-workspace (if you have permission; otherwise choose your GitHub account)
+   Repository name: ag-shield-partner-sdk
+   Visibility: Public
+   Do NOT initialize it with a README, .gitignore or license.
+   Click Create repository.
+
+2. Unzip this package. In the new GitHub repo, click 'uploading an existing file'
+   (or Add file -> Upload files). Drag the FILES AND FOLDERS INSIDE the
+   AG-SHIELD-Partner-SDK directory, not the parent directory itself.
+   Confirm that GitHub lists README.md, package.json, src/index.ts,
+   dist/index.js, test/client.test.mjs, docs/index.html and
+   .github/workflows/ci.yml at the intended paths.
+   Commit directly to main. Do not upload any .env, bank data, secrets,
+   main-application folders, or whole AG-SHIELD repo copies.
+
+3. Open the new repo's 'Actions' tab. Check that 'SDK build and unit tests'
+   completes successfully (green). This does NOT verify the live gateway.
+
+4. Optional developer docs website: Settings -> Pages -> Source:
+   Deploy from a branch -> Branch main -> Folder /docs -> Save.
+   The site URL normally follows:
+   https://<owner>.github.io/ag-shield-partner-sdk/
+   Verify that URL after GitHub shows Pages deployed successfully.
+
+5. To test the real risk-check API, in the NEW repo open:
+   Settings -> Secrets and variables -> Actions -> New repository secret.
+   Add AG_SHIELD_API_KEY, AG_SHIELD_BASE_URL,
+   AG_SHIELD_TEST_ACCOUNT_NUMBER and AG_SHIELD_TEST_BANK.
+   Use ONLY a fresh key and an account you own or have permission to test.
+   Then Actions -> Real API smoke test (manual and consented) -> Run workflow.
+   Set 'authorized_test' to true. A PASS proves the API gateway returned a
+   valid contract, NOT that the fraud model or bank-name resolver is accurate.
+
+6. Share the new GitHub repo URL (or optional Pages URL) with pilot partners.
+   They can add this dependency to their server application's package.json:
+   "@ag-tech/shield-sdk": "github:<owner>/ag-shield-partner-sdk#main"
+   Do NOT say the SDK is production-ready or publishes bank-name verification.
+
+Website: the SDK does NOT have to be imported into your React frontend.
+Your own website can link directly to this new repository. The SDK is used
+on partner BACKENDS and calls the separately deployed Supabase Edge Function.
+
+IF GITHUB PERMISSIONS BLOCK CREATION: Create the repo under your personal
+account instead, and change the <owner> in the install instructions.
+
+IMPORTANT: Nothing in this package fixes the older resolve-account 503 by
+itself. That requires deploying/repairing the Supabase Edge Function and
+setting valid provider keys in Supabase Function Secrets.

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+  <title>AG-SHIELD | Partner Developers</title>
+  <style>
+    :root{color-scheme:light;--ink:#12251f;--sub:#5b7268;--accent:#0b7852;--bg:#f5f9f7;--line:#dbe8e1}
+    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink);line-height:1.58}
+    .top{background:#0c3427;color:white;padding:28px 7vw;border-bottom:5px solid #43b083}.brand{font-weight:800;font-size:24px;letter-spacing:.01em}.brand small{font-weight:500;display:block;color:#b1e6cd;font-size:12px;letter-spacing:.12em}
+    main{max-width:900px;padding:46px 22px 90px;margin:auto}.eyebrow{text-transform:uppercase;letter-spacing:.12em;color:var(--accent);font-size:12px;font-weight:800}
+    h1{font-size:clamp(30px,5vw,48px);line-height:1.14;margin:7px 0 16px}h2{font-size:21px;margin:0 0 12px}p{margin:9px 0 17px}
+    .muted{color:var(--sub)}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;margin:26px 0}
+    .card{background:white;border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 5px 22px rgba(10,52,38,.04)}
+    a{color:var(--accent);text-underline-offset:3px}a:hover{text-decoration:none}
+    .pill{display:inline-block;border:1px solid #cda56a;color:#805012;background:#fff9e7;border-radius:40px;padding:4px 12px;font-weight:650;font-size:12px}
+    pre{background:#102e25;color:#d2f8e3;padding:18px;border-radius:12px;overflow:auto;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}
+    .note{border-left:4px solid var(--accent);padding:10px 16px;background:#eaf4ef;border-radius:0 10px 10px 0}
+    footer{padding-top:26px;border-top:1px solid var(--line);font-size:13px;color:var(--sub)}
+  </style>
+</head>
+<body>
+  <header class="top"><div class="brand">Shield <small>BY AG TECH &nbsp; / &nbsp; DEVELOPERS</small></div></header>
+  <main>
+    <span class="pill">PARTNER INTEGRATION PREVIEW</span>
+    <p class="eyebrow" style="margin-top:25px">Server-side API integration</p>
+    <h1>Build safer payment workflows with AG-SHIELD risk indicators.</h1>
+    <p class="muted">A TypeScript SDK for approved partners to call AG-SHIELD's risk assessment endpoint. Responses are indicators requiring review, not proof of guilt or a guarantee that a transaction is safe.</p>
+    <div class="cards">
+      <section class="card"><h2>01 &nbsp; Get access</h2><p>Request an admin-issued tenant API key with <code>verify:read</code>. Keep it in your backend secret store.</p></section>
+      <section class="card"><h2>02 &nbsp; Integrate</h2><p>Install the package from the dedicated public GitHub repository and call <code>riskCheck</code> from Node.js 22+.</p></section>
+      <section class="card"><h2>03 &nbsp; Verify</h2><p>Use the manual, consented live smoke test before processing real partner requests.</p></section>
+    </div>
+    <section class="card">
+      <h2>Backend usage</h2>
+      <pre>import { AGShieldClient } from '@ag-tech/shield-sdk'
+
+const shield = new AGShieldClient({
+  apiKey: process.env.AG_SHIELD_API_KEY,
+  baseUrl: process.env.AG_SHIELD_BASE_URL
+})
+
+const result = await shield.riskCheck({
+  account_number: process.env.AUTHORIZED_ACCOUNT_NUMBER,
+  bank_name: process.env.AUTHORIZED_BANK_NAME
+})
+
+// Only use this indicator within a reviewed decision policy.
+console.log(result.recommended_action)</pre>
+      <p class="muted">The example reads authorized data from environment variables; it does not contain a real bank account.</p>
+    </section>
+    <div class="cards">
+      <section class="card"><h2>API contract</h2><p>Review fields, authentication, response types and errors in the source-controlled specification.</p><p><a href="./openapi.yaml">View OpenAPI specification</a></p></section>
+      <section class="card"><h2>Integration guide</h2><p>Read setup, scopes, real live-test requirements and security restrictions.</p><p><a href="./INTEGRATION.md">View integration guide</a></p></section>
+    </div>
+    <p class="note"><strong>Availability:</strong> SDK contract tests passed in a local isolated environment. Live partner key authentication, risk accuracy and name verification require validation. The separate account-name resolver returned HTTP 503 during the latest observed test and is not available through this SDK.</p>
+    <footer>AG-SHIELD by AG Tech &nbsp; &bull; &nbsp; For authorized backend integrations only &nbsp; &bull; &nbsp; Contact: agtechrelations@gmail.com</footer>
+  </main>
+</body>
+</html>
