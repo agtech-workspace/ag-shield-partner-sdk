@@ -29,9 +29,9 @@
     <h1>Build safer payment workflows with AG-SHIELD risk indicators.</h1>
     <p class="muted">A TypeScript SDK for approved partners to call AG-SHIELD's risk assessment endpoint. Responses are indicators requiring review, not proof of guilt or a guarantee that a transaction is safe.</p>
     <div class="cards">
-      <section class="card"><h2>01 &nbsp; Get access</h2><p>Request an admin-issued tenant API key with <code>verify:read</code>. Keep it in your backend secret store.</p></section>
-      <section class="card"><h2>02 &nbsp; Integrate</h2><p>Install the package from the dedicated public GitHub repository and call <code>riskCheck</code> from Node.js 22+.</p></section>
-      <section class="card"><h2>03 &nbsp; Verify</h2><p>Use the manual, consented live smoke test before processing real partner requests.</p></section>
+      <section class="card"><h2>01 &nbsp; Get access</h2><p>Request an authorized tenant API key with <code>verify:read</code>. Keep it in your backend secret store.</p></section>
+      <section class="card"><h2>02 &nbsp; Integrate</h2><p>Install the package from the dedicated <a href="https://github.com/agtech-workspace/ag-shield-partner-sdk">partner GitHub repository</a> and call <code>riskCheck</code> from Node.js 22+.</p></section>
+      <section class="card"><h2>03 &nbsp; Verify</h2><p>Use a consented live smoke test before processing real partner requests. Failed checks mean <strong>UNKNOWN</strong>, not safe.</p></section>
     </div>
     <section class="card">
       <h2>Backend usage</h2>
@@ -47,16 +47,18 @@ const result = await shield.riskCheck({
   bank_name: process.env.AUTHORIZED_BANK_NAME
 })
 
-// Only use this indicator within a reviewed decision policy.
+// Use only as an indicator in a reviewed decision policy.
 console.log(result.recommended_action)</pre>
-      <p class="muted">The example reads authorized data from environment variables; it does not contain a real bank account.</p>
+      <p class="muted">This server-side example takes authorized data from environment variables. The documentation website URL is <strong>not</strong> the API base URL.</p>
     </section>
     <div class="cards">
-      <section class="card"><h2>API contract</h2><p>Review fields, authentication, response types and errors in the source-controlled specification.</p><p><a href="./openapi.yaml">View OpenAPI specification</a></p></section>
-      <section class="card"><h2>Integration guide</h2><p>Read setup, scopes, real live-test requirements and security restrictions.</p><p><a href="./INTEGRATION.md">View integration guide</a></p></section>
+      <section class="card"><h2>OpenAPI contract</h2><p>Request fields, API-key authentication, response shapes and error codes.</p><p><a href="./openapi.yaml">View OpenAPI contract</a></p></section>
+      <section class="card"><h2>SDK source</h2><p>Review the TypeScript client, README and test examples directly in the public repository.</p><p><a href="https://github.com/agtech-workspace/ag-shield-partner-sdk/tree/main/src">View SDK source on GitHub</a></p></section>
+      <section class="card"><h2>Integration guide</h2><p>Setup, scopes, live-test requirements and data security.</p><p><a href="https://github.com/agtech-workspace/ag-shield-partner-sdk/blob/main/docs/INTEGRATION.md">Read integration guide</a></p></section>
+      <section class="card"><h2>Quick start</h2><p>Install, configure and call the gateway from a backend application.</p><p><a href="https://github.com/agtech-workspace/ag-shield-partner-sdk/blob/main/README.md">Read the README</a></p></section>
     </div>
-    <p class="note"><strong>Availability:</strong> SDK contract tests passed in a local isolated environment. Live partner key authentication, risk accuracy and name verification require validation. The separate account-name resolver returned HTTP 503 during the latest observed test and is not available through this SDK.</p>
-    <footer>AG-SHIELD by AG Tech &nbsp; &bull; &nbsp; For authorized backend integrations only &nbsp; &bull; &nbsp; Contact: agtechrelations@gmail.com</footer>
+    <p class="note"><strong>Preview limitations:</strong> AG-SHIELD is an early-stage service. Gateway requests may fail because of authorization, coverage, quotas, upstream providers or temporary downtime. Never interpret a low score or a failed request as proof of safety. The partner SDK currently exposes <code>riskCheck()</code> only; account-name resolution is a separate website capability and is <strong>not</strong> part of this SDK. Live availability and accuracy have not been independently certified.</p>
+    <footer>AG-SHIELD by AG Tech &nbsp; &bull; &nbsp; Authorized backend integrations only &nbsp; &bull; &nbsp; Contact: agtechrelations@gmail.com</footer>
   </main>
 </body>
 </html>
