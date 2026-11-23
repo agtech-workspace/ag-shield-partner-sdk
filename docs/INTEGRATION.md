@@ -1,76 +1,61 @@
 # AG-SHIELD partner integration guide
 
-Status: **PREVIEW / NOT CERTIFIED FOR PRODUCTION DECISIONING**
+**Status: CONTROLLED PREVIEW — NOT CERTIFIED FOR PRODUCTION FINANCIAL DECISIONING**
+
+For the shortest setup, start with the [root README](../README.md). The [developer website](https://agtech-workspace.github.io/ag-shield-partner-sdk/) and [OpenAPI contract](https://agtech-workspace.github.io/ag-shield-partner-sdk/openapi.yaml) require GitHub Pages to be enabled for this repository.
 
 ## 1. Obtain authorized access
 
-AG-SHIELD's administrator creates a tenant and issues a server-side key with the `verify:read` scope through its protected dashboard. Store the key in your server's secrets manager. A key can be revoked or rotated; the full raw token is visible at issuance only. The dashboard may display `sg_live.<raw>`; the SDK strips the display prefix when it sends `X-API-Key`.
+AG-SHIELD's administrator issues an approved partner tenant key with `verify:read`. Store the key only in server-side secrets. Treat the display-format prefix `sg_live.` as optional; the SDK strips this prefix when preparing its `X-API-Key` request. Keys can be rotated or revoked. Never expose keys in a browser, mobile application, a `VITE_` variable, or GitHub.
 
-**Never** place the partner API key in `VITE_` variables, a GitHub commit, a mobile app, or an HTTP request executed by an end user's browser.
+## 2. Confirm the actual gateway
 
-## 2. Select your endpoint
-
-The checked-in SDK defaults to `https://zmiaaxnevvznmvfzlcba.functions.supabase.co`. Supabase's project-function path `https://zmiaaxnevvznmvfzlcba.supabase.co/functions/v1` is also a supported SDK `baseUrl` format (the SDK appends `/risk-check`). **Neither address has been independently verified here to serve the deployed risk-check function successfully.** The operator must confirm the correct URL and staging/production separation before onboarding.
+**GitHub Pages is documentation, not the backend API.** Obtain the verified deployed Supabase function URL from AG Tech. The SDK accepts a base URL such as `https://<project-ref>.supabase.co/functions/v1` and appends `/risk-check`. The checked-in SDK contains another default Supabase functions-origin format, but operators should explicitly provide a tested URL rather than relying on its default. Validate live partner authentication before onboarding.
 
 ## 3. Request contract
 
-`POST /risk-check` with `Content-Type: application/json` and `X-API-Key: <raw-key>`.
+`POST /risk-check` with `Content-Type: application/json` and `X-API-Key: <partner key>`.
 
 | Field | Required | Meaning |
-|---|---|---|
-| `account_number` | Yes | Exactly 10 digits as a string, preserve leading zero |
-| `bank_name` | Yes | Nonempty bank name, <=100 characters |
-| `amount` | No | Nonnegative finite numeric NGN amount; omitted means 0 in the current gateway |
-| `is_new_recipient` | No | Boolean; defaults to `true` |
-| `holder_name` | No | Unverified name hint, up to 150 characters; NOT name verification |
+| --- | --- | --- |
+| `account_number` | Yes | Exactly 10 digits as a string, including leading zeros |
+| `bank_name` | Yes | Nonempty bank name, up to 100 characters |
+| `amount` | No | Nonnegative NGN amount; default 0 in the current gateway |
+| `is_new_recipient` | No | Boolean; default `true` |
+| `holder_name` | No | Unverified name hint, **not** account-name confirmation |
 
-Do not infer that the account belongs to a real person from an input hint.
+## 4. Response interpretation
 
-## 4. Response contract
+Successful contract responses contain `risk_level: safe | warning | high_risk`, `risk_score: 0..100`, `recommended_action: ALLOW | REVIEW | BLOCK | FORCE_MANDATORY_SECONDARY_OTP`, `reasons`, and `source_registry`. `confidence_interval` is a legacy scalar field, **not** a statistical confidence interval.
 
-A valid success has `risk_level: safe | warning | high_risk`, `risk_score` between 0 and 100, `recommended_action: ALLOW | REVIEW | BLOCK | FORCE_MANDATORY_SECONDARY_OTP`, `reasons: string[]`, and `source_registry: string[]`. `confidence_interval`, despite the name, is a scalar confidence value and **not** a statistical confidence interval. Reported sources and scores require independent provenance and accuracy review before being used for financial decisions.
+**Do not treat `risk_level: safe` as an independent confirmation of account ownership or a promise that payment is safe.** No negative reports may mean there is insufficient coverage rather than evidence of legitimacy. A numeric score is not a calibrated probability of fraud.
 
-| Status | Meaning | Partner handling |
-|---|---|---|
-| 200 | Contract-valid assessment | Apply your independently reviewed policy |
-| 400 | Invalid request | Correct request |
-| 401 | Unauthorized API key | Check configured key; do not expose it |
-| 403 | Missing `verify:read` scope or origin restriction | Ask AG Tech to review access |
-| 429 | Burst or monthly quota | Stop and respect retry guidance |
-| 500 / 503 | Server, database or audit failure | UNKNOWN; hold/review, never SAFE |
-| Network failure / malformed JSON | No reliable assessment | UNKNOWN; hold/review, never SAFE |
+| Outcome | Partner handling |
+| --- | --- |
+| 200 | Apply independently approved policy; verify evidence quality |
+| 400 | Fix request data |
+| 401 / 403 | Check key and scope, without exposing credentials |
+| 429 | Stop or apply bounded backoff according to your quota policy |
+| 500 / 503, malformed response, network error | **UNKNOWN**. Do not treat as safe; use manual review |
 
-Requests may be metered. Do not retry automatically without a bounded policy. This SDK defaults to zero retries.
+Requests may be metered. The SDK defaults to zero automatic retries.
 
-## 5. Automated tests (no secrets required)
+## 5. Automated and live tests
 
-The repository has a build-and-test workflow in `.github/workflows/ci.yml`, which runs on every push or pull request. Unit tests intentionally use **synthetic fixtures** for input validation and error handling only. They do not demonstrate bank verification accuracy, live model performance, or production deployment.
+Unit tests simulate provider/gateway behavior and validate SDK error handling. They **do not** establish live uptime, correctness of account names, registry coverage, or fraud-detection performance.
 
-## 6. Real partner smoke test (manual only)
+For a real pilot, arrange a fresh partner key and verified gateway URL with AG Tech. Test using an account you own or for which explicit authorization has been provided. Check success, quota exhaustion, invalid credentials, timeout behavior and unknown evidence. Avoid leaking full financial identifiers into public logs or bug reports.
 
-**Before testing, fix exposed credentials in the original AG-SHIELD repo.** Avoid testing with a compromised key.
+## 6. Account-name resolution is a separate capability
 
-In the NEW partner repository, open **Settings -> Secrets and variables -> Actions -> New repository secret** and set these values privately:
+The AG-SHIELD consumer website has a separate authenticated `resolve-account` flow, using bank/provider lookups. It is **not a method in this partner SDK**, and availability varies by provider, supported bank, valid credentials and coverage. We do not promise partner name-resolution functionality or treat `holder_name` as verified. A partner `resolveAccount()` API would require its own scoped authorization, documentation, privacy controls and live tests before release.
 
-| Secret | Value |
-|---|---|
-| `AG_SHIELD_API_KEY` | Fresh valid partner key issued by AG-SHIELD Admin with `verify:read` |
-| `AG_SHIELD_BASE_URL` | Verified deployed base URL, e.g. project `/functions/v1` origin (no `/risk-check`) |
-| `AG_SHIELD_TEST_ACCOUNT_NUMBER` | A 10-digit account belonging to you or an explicitly consenting test participant |
-| `AG_SHIELD_TEST_BANK` | The exact bank name accepted by the deployed gateway |
+## 7. Security, privacy and launch controls
 
-Use **Actions -> Real API smoke test (manual and consented) -> Run workflow** and confirm authorization. The test makes **one real request**, checks the SDK's response contract, and logs only a redacted PASS/FAIL summary. A passing smoke test proves the endpoint and partner API key respond with a valid contract; it does NOT establish predictive fraud accuracy or account-name verification.
+- Keep keys private and rotate any exposed credentials before onboarding.
+- Use an appropriate legal basis, transparent notices, data minimization and bounded retention for financial identifiers.
+- Assess registry provenance, false positives/negatives and regional bank coverage before automated decisions.
+- Audit quotas, key revocation and failures; preserve a human-review path.
+- Obtain AG Tech approval for commercial terms, partner policies and service availability expectations.
 
-If the test fails, inspect Supabase Edge Functions `risk-check` logs for the same execution without posting raw request bodies or keys in public issues. Fix function deployment, key lookup and RLS/migration discrepancies before inviting partners to send real data.
-
-## 7. Account-name verification is a separate integration
-
-The observed `resolve-account` gateway returned **503** during live testing and is not offered by this SDK. It requires an authorized bank provider, a verified canonical bank code, private provider credentials, secure caching, and a human-reviewed privacy policy. A name hint in `riskCheck` is not a verified account holder. Do **not** market this SDK as verifying names until a real consented provider lookup succeeds.
-
-## 8. Security, privacy and launch gate
-
-- Use your own lawful basis, clear notices, purpose limitation, retention controls and human review of adverse decisions.
-- Protect API keys and account data from public repositories, client logs and browser code.
-- Measure false positives, false negatives and data provenance on verified outcomes before describing the risk engine as accurate.
-- Audit key revocation, scope denial, monthly quota, errors and deployment status.
-- AG Tech should approve partner contracts and license terms before general availability.
+**Partner contact:** agtechrelations@gmail.com
