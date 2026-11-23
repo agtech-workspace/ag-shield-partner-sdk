@@ -43,8 +43,8 @@ Do **not** import this SDK in a React frontend, mobile app, browser, or any loca
 Store the following as **server-side secrets**:
 
 ```dotenv
-AG_SHIELD_API_KEY=YOUR_ADMIN_ISSUED_PARTNER_KEY
-AG_SHIELD_BASE_URL=YOUR_CONFIRMED_SUPABASE_FUNCTION_BASE_URL
+AG_SHIELD_API_KEY=your_partner_key_from_ag_tech
+AG_SHIELD_BASE_URL=https://zmiaaxnevvznmvfzlcba.supabase.co/functions/v1
 ```
 
 `AG_SHIELD_BASE_URL` must be the base of the actual deployed API, for example `https://<project-ref>.supabase.co/functions/v1`, **not** `https://agtech-workspace.github.io/ag-shield-partner-sdk/`, and it must **not** end in `/risk-check`.
